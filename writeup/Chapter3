@@ -1,0 +1,221 @@
+## We'll write Chapter 3 alongside the notebooks:
+
+3.1 Research Design
+3.2 Dataset
+3.3 Data Pre-processing
+3.4 Feature Engineering
+3.5 Clustering Analysis
+3.6 NLP Analysis (therapist comments only)
+3.7 Predictive Modelling (XGBoost + SHAP)
+
+
+Mean Emotional Connection: The mean emotional connection score was calculated for each participant by averaging therapist and parent ratings across all intervention sessions. This feature represents the participant's overall emotional engagement with the personalised storytelling intervention and provides a participant-level summary suitable for clustering and predictive modelling. Missing observations were excluded automatically during the calculation of the mean.
+
+Mean Verbal Participation
+
+The mean verbal participation score was calculated by averaging verbal participation ratings across all intervention sessions for each participant. This feature represents the participant's overall level of verbal interaction during storytelling sessions and provides a participant-level measure of communication behaviour. As with the other trajectory features, missing observations were excluded automatically from the calculation of the mean.
+
+To reduce multiple session-level observations into participant-level representations, behavioural variables were aggregated using the arithmetic mean. Multiple variables, including engagement, emotional connection, verbal participation, attention, enjoyment, and story understanding, were grouped by participant identifier and averaged across all available intervention records. The use of mean aggregation provided a concise summary of each participant's typical behavioural performance while retaining all available information. Missing observations were excluded automatically during the calculation of the mean.
+
+Mean Success Percentage: The participant-level mean success percentage was calculated using the cleaned success_percentage_calculated variable developed during data preprocessing. By averaging the percentage of successful responses across all intervention records, this feature provides an overall measure of participant performance while avoiding inconsistencies present in the original manually entered percentage values.
+
+
+Chapter 3 – Feature Engineering:
+
+A subset of behavioural variables was selected to construct participant-level trajectory features. Variables were chosen based on their relevance to the study objectives, which focused on engagement, communication, emotional response, learning, behavioural generalisation, and intervention outcomes. Demographic variables, administrative information, free-text comments, and story-specific variables were excluded from the clustering features because they did not directly represent participant behavioural trajectories. Each selected behavioural variable was aggregated by calculating the participant-level mean across all available intervention records.
+
+Chapter 3.4 – Feature Engineering.
+
+Following data cleaning, the session-level dataset was transformed into a participant-level dataset to support clustering and predictive modelling. Behavioural ratings recorded across multiple intervention sessions were aggregated using the arithmetic mean, producing a single representative value for each participant. Features were selected based on their relevance to the study objectives and included engagement, emotional connection, verbal participation, attention, enjoyment, story understanding, learning application, confidence, behavioural generalisation, story recall, reflection, real-life connection, response time, and success percentage. The resulting participant-level dataset contained 32 participants and 15 variables, providing a structured representation of each participant's behavioural trajectory throughout the personalised storytelling intervention.
+
+Chapter 3.4 Feature Engineering:
+
+The engineered participant-level dataset was validated to ensure suitability for subsequent machine learning analyses. All behavioural features were successfully converted to numerical data types, producing a dataset containing 32 participants and 15 participant-level variables. Most features were complete, with only the mean response time and mean success percentage containing a small number of missing values resulting from unavailable session records. Missing values were retained at this stage and addressed during the machine learning preprocessing phase to maintain a clear separation between feature engineering and model preparation.
+
+Chapter 3.4 – Feature Engineering:
+
+Descriptive statistics were calculated to validate the participant-level feature dataset before machine learning analysis. The final dataset contained 32 participants and 15 participant-level variables. Behavioural features demonstrated reasonable variability across participants, indicating their suitability for clustering and predictive modelling. Response time and success percentage contained a small number of missing values resulting from incomplete session records, while all remaining behavioural variables were complete. The number of intervention sessions was identical for all participants (eight sessions), confirming consistent exposure to the intervention.
+
+### Software and analytical environment
+
+The clustering analysis was conducted in Python using pandas and NumPy for data manipulation and numerical processing. Matplotlib and Seaborn were used to support exploratory and statistical visualisation. The machine-learning procedures were implemented using scikit-learn. StandardScaler was used to standardise the participant-level features, K-Means was used to identify participant groupings, silhouette analysis was used to assess cluster separation, and Principal Component Analysis was used to produce a two-dimensional visual representation of the clustering solution. A fixed random seed of 42 was specified to improve the reproducibility of the analysis.
+
+### Loading the participant-level dataset
+
+The participant-level feature dataset generated during the feature engineering stage was imported into Python using the `read_csv()` function from the pandas library. Each row represented an individual participant, while the columns contained aggregated behavioural, engagement, emotional, and learning-related measures derived from all storytelling sessions. An initial inspection of the dataset was performed using the `head()` function to verify that the data had been imported correctly and that the variables were available for subsequent clustering analysis.
+
+### Dataset exploration
+
+An initial exploratory assessment of the participant-level dataset was conducted prior to clustering. The structure of the dataset was examined by inspecting its dimensions, variable names, and data types. In addition, the number of non-missing observations for each variable was reviewed to identify any incomplete data that required preprocessing before clustering. This exploratory stage ensured that the dataset was suitable for subsequent unsupervised machine learning analyses.
+
+### Missing data treatment
+
+The participant-level dataset contained a small number of missing observations in the variables *Mean_response_time_seconds* and *Mean_success_percentage*. As the dataset consisted of only 32 participants, removing incomplete cases would have unnecessarily reduced the sample size. Instead, missing values were imputed using the median of each respective variable. Median imputation was selected because it is robust to extreme values and is appropriate for continuous variables such as response times. Following imputation, the dataset was re-examined to confirm that no missing values remained prior to feature scaling and clustering.
+
+### Selection of clustering variables
+
+Prior to clustering, the participant identifier was excluded from the feature matrix because it serves only as a unique identifier and does not represent a behavioural or learning characteristic. Including identifier variables in distance-based clustering algorithms such as K-Means can introduce artificial similarities or differences between observations. Consequently, clustering was performed using the 15 participant-level behavioural, engagement, emotional, learning, and performance features derived during the feature engineering stage.
+
+### Feature standardisation
+
+Prior to clustering, the participant-level features were standardised using the `StandardScaler` implementation from scikit-learn. Standardisation transformed each variable to have an approximate mean of zero and a standard deviation of one. This preprocessing step was necessary because K-Means clustering is based on Euclidean distance and is sensitive to differences in variable scale. Standardising the features ensured that no individual variable exerted disproportionate influence on the clustering solution due solely to its numerical range.
+
+
+### Removal of non-informative features
+
+During preprocessing, the variable *Number_of_sessions* was removed from the clustering feature set because all participants completed the same number of storytelling sessions. As the variable exhibited zero variance across the dataset, it contained no information that could contribute to distinguishing participants. Removing constant features is consistent with good machine-learning practice, as such variables do not influence distance calculations or improve the quality of clustering solutions.
+
+### Determining the optimal number of clusters: Elbow Method
+
+The optimal number of clusters was initially investigated using the Elbow Method. K-Means clustering models were fitted for values of *k* ranging from 2 to 10, and the within-cluster sum of squares (inertia) was calculated for each solution. Inertia measures the compactness of clusters by quantifying the sum of squared distances between observations and their assigned cluster centroids. The resulting plot was examined to identify the point at which further increases in the number of clusters produced only marginal reductions in inertia, indicating a suitable balance between model complexity and cluster compactness.
+
+The Elbow Method indicated a substantial reduction in inertia as the number of clusters increased from 2 to 5. Beyond five clusters, the rate of improvement became noticeably smaller, suggesting diminishing returns from adding additional clusters. Consequently, values around five clusters were considered suitable candidates for further evaluation using Silhouette Analysis.
+
+The Silhouette Analysis indicated that the highest silhouette score was obtained when the data were partitioned into two clusters, suggesting that this solution produced the greatest separation between participant groups. However, the Elbow Method indicated that a solution of approximately five clusters also provided a suitable balance between model complexity and cluster compactness. As the two evaluation methods produced different recommendations, both statistical evidence and the interpretability of the resulting participant profiles were considered before selecting the final clustering solution.
+
+## Selection of the final clustering solution
+
+The Elbow Method and Silhouette Analysis produced different recommendations regarding the optimal number of clusters. Consequently, K-Means models with both candidate values of k were fitted and compared. The final clustering solution was selected by considering cluster compactness, cluster separation, cluster size, and the interpretability of the resulting participant profiles in the context of personalised storytelling interventions for autistic children.
+
+## Clustering Analysis
+
+An unsupervised clustering analysis was conducted to identify naturally occurring participant profiles based on responses to the personalised storytelling intervention. Clustering was performed at the participant level using the feature-engineered dataset produced during the preceding stage of the analysis. The dataset contained 32 participants and a series of aggregated measures representing engagement, emotional connection, verbal participation, attention, enjoyment, story understanding, learning application, confidence, generalisation, story recall, reflection, real-life connection, response time, and success percentage.
+
+K-Means clustering was selected as the primary clustering algorithm. This method partitions observations into a predefined number of clusters by iteratively assigning observations to the nearest cluster centroid and updating the centroids to minimise within-cluster variation. The approach was considered suitable for the present analysis because the objective was to explore whether participants demonstrated distinguishable multivariate response patterns across the behavioural, engagement, learning, and outcome-related features derived from the storytelling sessions.
+
+## Data preparation for clustering
+
+Prior to clustering, the participant-level dataset was examined for its dimensions, variable types, and missing observations. The dataset consisted of 32 participant records. Missing values were identified in two variables: Mean_response_time_seconds, which contained five missing observations, and Mean_success_percentage, which contained one missing observation. These missing values were imputed before clustering to retain the complete participant sample rather than removing participants with incomplete observations.
+
+The participant identifier was excluded from the clustering features because it functions solely as an identifier and does not represent a meaningful behavioural or intervention-related characteristic. Number_of_sessions was also excluded from the clustering analysis because it showed no meaningful variation across participants and therefore could not contribute to distinguishing participant profiles. Consequently, 14 participant-level variables were retained as clustering features: mean engagement, emotional connection, verbal participation, attention, enjoyment, story understanding, learning application, confidence, generalisation, story recall, reflection, real-life connection, response time, and success percentage.
+
+## Feature standardisation
+
+The selected clustering variables were standardised prior to applying K-Means. Standardisation was necessary because the features were measured on different numerical scales. For example, several engagement and learning measures were represented using relatively small numerical ranges, whereas response time was measured in seconds and success was expressed as a percentage. Without scaling, variables with larger numerical ranges could disproportionately influence the Euclidean distances used by K-Means.
+
+Standardisation transformed the selected features so that they were expressed on a comparable scale, with values representing their position relative to the feature mean and standard deviation. The resulting standardised features were subsequently used for all K-Means model fitting and cluster evaluation procedures.
+
+## Determination of the number of clusters
+
+The appropriate number of clusters was investigated rather than predetermined. Candidate K-Means solutions ranging from two to ten clusters (k=2 to k=10) were evaluated using both the Elbow Method and Silhouette Analysis. A fixed random state was used to support reproducibility, and multiple centroid initialisations (n_init=10) were employed to reduce sensitivity to a single random initialisation.
+
+The Elbow Method evaluated within-cluster sum of squares, represented by K-Means inertia, across the candidate values of k. As the number of clusters increases, inertia naturally decreases because observations can be assigned to increasingly specialised groups. Therefore, the analysis considered the point at which further increases in the number of clusters produced diminishing improvements in within-cluster compactness. Visual inspection of the elbow curve indicated that a solution of approximately five clusters was a plausible candidate.
+
+Silhouette Analysis was additionally employed because the Elbow Method alone does not directly evaluate separation between clusters. The silhouette coefficient considers both the similarity of an observation to observations within its assigned cluster and its separation from observations in neighbouring clusters. Higher silhouette values indicate more cohesive and clearly separated clusters.
+
+The highest silhouette coefficient was obtained for the two-cluster solution (k=2), with a score of 0.545. In comparison, the silhouette coefficients for three, four, and five clusters were 0.242, 0.242, and 0.234, respectively. The substantially higher coefficient for k=2 provided evidence that the two-cluster solution produced considerably clearer separation of participant profiles than the more complex alternatives.
+
+## Comparison of candidate clustering solutions
+
+Because the Elbow Method and Silhouette Analysis did not produce identical recommendations, cluster selection was not based solely on a single evaluation criterion. The two-cluster solution suggested by the Silhouette Analysis and the approximately five-cluster solution suggested by visual examination of the Elbow Method were fitted separately and examined as candidate models. This allowed statistical clustering performance to be considered alongside cluster size and substantive interpretability.
+
+The two-cluster solution divided the 32 participants into groups containing 25 and 7 participants, respectively. In contrast, the five-cluster solution produced clusters containing 11, 6, 6, 8, and 1 participant. The presence of a single-participant cluster in the five-cluster solution was investigated rather than automatically treated as an error or used as grounds for excluding the participant.
+
+Inspection showed that the participant assigned to the singleton cluster exhibited markedly low standardised values across numerous clustering variables. This suggested that the five-cluster model was using one cluster to represent an unusually low multivariate response profile. The participant was retained in the analysis because an unusual response pattern does not, by itself, provide sufficient methodological justification for exclusion and may represent genuine heterogeneity within the participant sample.
+
+Considering the substantially higher silhouette coefficient, the absence of a singleton cluster, and the emerging interpretability of the participant profiles, the two-cluster solution was provisionally preferred over the five-cluster solution. The final interpretation of the selected clusters was subsequently based on cluster-level feature profiles and visual examination of the participant structure.
+
+## Cluster profiling
+
+Following model selection, cluster profiling was undertaken to determine the characteristics differentiating the participant groups. Mean values of the 14 clustering variables were calculated separately for each cluster. This enabled the mathematically derived clusters to be interpreted in relation to participants' responses to the storytelling intervention.
+
+Cluster interpretation was conducted cautiously. Cluster numbers were treated as arbitrary computational labels rather than ordinal categories; for example, membership in Cluster 1 does not inherently represent a better or worse outcome than membership in Cluster 0. Similarly, the resulting profiles were interpreted specifically in relation to observed responses to the storytelling intervention and were not considered indicators of autism severity, general ability, or broader clinical characteristics.
+
+## Dimensionality reduction and visualisation
+
+Principal Component Analysis (PCA) was planned as a dimensionality-reduction technique to support visual examination of the final clustering solution. Because the clustering analysis contained 14 features, the complete participant structure could not be directly represented in a conventional two-dimensional plot. PCA was therefore used to transform the standardised feature space into a smaller number of orthogonal components, allowing participants and their cluster memberships to be visualised in two dimensions.
+
+Importantly, PCA was used for visualisation and interpretation rather than as the primary basis for K-Means clustering. The clustering algorithm itself was fitted using the full set of selected standardised features so that information contained across the original clustering variables was retained during model estimation.
+
+## Reproducibility and methodological considerations
+
+Several measures were incorporated to improve the reproducibility and robustness of the clustering procedure. The same standardised feature matrix was used when evaluating competing values of k, a fixed random state was applied to K-Means, and multiple centroid initialisations were performed. Cluster selection was based on complementary quantitative criteria rather than relying exclusively on visual inspection of a single metric. Candidate solutions were additionally assessed in terms of cluster sizes and substantive interpretability.
+
+The relatively small sample size (n=32) was considered when interpreting the clustering results. The clusters should therefore be regarded as exploratory participant profiles within the present dataset rather than definitive or generalisable subtypes of autistic children. The clustering analysis was intended to identify patterns that could support subsequent interpretation of heterogeneous responses to personalised storytelling interventions, rather than to establish clinical classifications.
+
+## One important note for your final dissertation
+
+I would not yet paste the PCA paragraph as a completed procedure if we have not actually run PCA. Keep it as a draft until we perform that step. Likewise, I deliberately used “provisionally preferred” for k = 2 because we are still completing the cluster profiling and PCA analysis.
+
+Once Notebook 03 is finished, we can change those parts into definitive past-tense statements based on the actual results. This prevents your methodology from claiming analyses that have not yet been completed.
+
+
+Methodology — Participant Clustering
+Cluster analysis
+
+An unsupervised clustering analysis was conducted to identify groups of participants exhibiting similar patterns across the engagement, emotional, behavioural, and learning-related measures. The analysis was performed at the participant level, with each participant represented by their mean scores across the available sessions. The participant-level dataset contained 32 participants.
+
+Participant ID was excluded from the clustering features because it served only as an identifier and did not represent a meaningful behavioural or learning characteristic. The number of sessions was also excluded because it showed no variation across participants and therefore provided no discriminatory information for clustering. Following these exclusions, 14 features were retained for the cluster analysis: engagement, emotional connection, verbal participation, attention, enjoyment, story understanding, learning application, confidence, generalisation, story recall, reflection, real-life connection, response time, and success percentage.
+
+Prior to clustering, missing values were handled using median imputation. This was required for response time and success percentage, for which five and one participant-level values were missing, respectively. Median imputation was used to retain the full participant sample while reducing the influence that extreme values could have on the imputed values.
+
+Because the clustering variables were measured on different numerical scales, the 14 features were standardised using StandardScaler. Standardisation transformed the variables onto a common scale before clustering, preventing variables with larger numerical ranges, such as response time or success percentage, from disproportionately influencing the distance calculations used by K-Means.
+
+Selection of the number of clusters
+
+K-Means clustering was evaluated for solutions ranging from two to ten clusters (k=2 to k=10). A fixed random state and 10 centroid initialisations (n_init=10) were used to improve reproducibility and reduce sensitivity to the initial placement of cluster centroids.
+
+The number of clusters was evaluated using both the within-cluster sum of squares (inertia) and the silhouette coefficient. Inertia was examined using the elbow method to assess how increasing the number of clusters reduced within-cluster variation. The silhouette coefficient was additionally calculated to assess the balance between within-cluster cohesion and separation from other clusters, with higher values indicating better-defined cluster structures.
+
+The evaluation did not rely solely on a single numerical criterion. Candidate solutions were also examined in relation to cluster size and substantive interpretability. In particular, the two- and five-cluster solutions were inspected in greater detail. The five-cluster solution produced cluster sizes of 11, 6, 6, 8 and 1 participants, meaning that one cluster consisted of a single participant. Examination of this participant showed an unusually low profile across many of the clustering measures. However, the participant was retained because the observed values represented an existing participant profile rather than being treated automatically as an erroneous observation.
+
+The final two-cluster solution was selected because it produced the highest silhouette coefficient among the evaluated solutions and provided a more parsimonious and interpretable participant grouping. The final K-Means model was therefore fitted using k=2, and each participant was assigned to one of the two clusters.
+
+Cluster profiling
+
+Following selection of the final model, the clusters were profiled using the mean values of each clustering feature. Standardised cluster profiles were also calculated to allow direct comparison across features originally measured on different scales.
+
+Differences between the mean standardised feature scores of the two clusters were calculated descriptively to identify the variables on which the cluster profiles showed the greatest separation. These differences were treated as descriptive characteristics of the clusters rather than inferential effect sizes, as the same variables had been used to construct the clusters.
+
+PCA visualisation
+
+Principal Component Analysis (PCA) was used as a dimensionality-reduction technique to visualise the final cluster solution. The 14 standardised clustering variables were projected onto two principal components, allowing participants to be represented in a two-dimensional scatter plot according to their K-Means cluster membership.
+
+PCA was used only for visualisation; clustering was conducted using the complete set of 14 standardised features rather than the two PCA components. The proportion of variance explained by each principal component was calculated to assess how much of the original multivariate variation was represented in the two-dimensional visualisation.
+
+Results — Participant Clustering
+Selection of the final cluster solution
+
+K-Means solutions containing between two and ten clusters were evaluated. The two-cluster solution produced the highest silhouette coefficient (0.545). Silhouette coefficients were substantially lower for the alternative solutions, including 0.242 for three clusters, 0.242 for four clusters and 0.234 for five clusters. The scores for solutions containing six to ten clusters remained below approximately 0.22.
+
+Although the five-cluster solution was examined as an alternative candidate, its cluster sizes were highly uneven (11, 6, 6, 8 and 1 participants). The single-participant cluster corresponded to Participant 133, who exhibited particularly low values across several engagement and learning-related measures. The participant was retained in the dataset, but the formation of a singleton cluster reduced the usefulness of the five-cluster solution as a general participant segmentation.
+
+Consequently, the two-cluster solution was retained as the final model. It divided the 32 participants into Cluster 0 (n = 25; 78.1%) and Cluster 1 (n = 7; 21.9%).
+
+Characteristics of the two clusters
+
+The cluster profiles revealed a consistent distinction between the two participant groups. Cluster 0 demonstrated higher mean values than Cluster 1 across almost all engagement, emotional and learning-related measures.
+
+For example, mean engagement was 3.21 in Cluster 0 compared with 1.64 in Cluster 1, while mean emotional connection was 2.96 and 1.40, respectively. Mean story understanding was also higher in Cluster 0 (3.26) than Cluster 1 (1.65).
+
+Differences were particularly pronounced for several learning-related measures. Mean confidence was 2.57 for Cluster 0 compared with 0.78 for Cluster 1, while generalisation was 2.27 compared with 0.44. Similarly, mean reflection was 2.38 in Cluster 0 and 0.35 in Cluster 1, and real-life connection was 2.28 and 0.49, respectively.
+
+The clusters also differed in overall success percentage. Cluster 0 achieved a mean success percentage of 74.37%, compared with 44.58% for Cluster 1.
+
+Response time showed a different pattern. Participants in Cluster 0 had a mean response time of approximately 66.42 seconds, whereas Cluster 1 had a mean response time of approximately 74.96 seconds. However, subsequent comparison of the standardised cluster profiles indicated that response time showed substantially less separation between the clusters than the other measures.
+
+Standardised cluster profiles
+
+Examination of the standardised cluster profiles reinforced the distinction between the two participant groups. Cluster 0 showed positive mean standardised scores across almost all engagement and learning measures, whereas Cluster 1 showed consistently negative scores.
+
+The largest descriptive differences between the standardised cluster means were observed for generalisation (2.14), reflection (2.13), real-life connection (2.09), story recall (2.08) and confidence (2.01). Emotional connection, engagement, verbal participation, learning application and story understanding also showed substantial differences between the two profiles.
+
+In contrast, the standardised mean difference for response time was only −0.19, indicating comparatively little separation between the clusters on this measure. Thus, the cluster distinction appeared to reflect a broad pattern across engagement, emotional connection and learning-related outcomes rather than primarily differences in response speed.
+
+PCA visualisation
+
+The PCA supported the visual interpretation of the final cluster structure. The first principal component accounted for 76.84% of the total variance, while the second accounted for 7.76%. Together, the two components explained approximately 84.60% of the variance in the 14 standardised clustering features.
+
+The PCA scatter plot showed that the two K-Means clusters were primarily separated along the first principal component. Cluster 0 participants were predominantly positioned toward the higher end of PC1, whereas Cluster 1 participants occupied the lower end. Participant 133 was positioned particularly far along the negative direction of PC1 and belonged to Cluster 1, consistent with the participant's comparatively low values across several of the original measures.
+
+Overall, the PCA visualisation was consistent with the two-cluster solution identified through K-Means and the silhouette analysis, while also illustrating heterogeneity within the smaller cluster.
+
+Figures and tables I would actually include
+
+You don't need to put every notebook output into the dissertation. I would include four key items:
+
+Item	Where	Purpose
+Table: K-Means model evaluation for k = 2–10	Results	Report inertia and silhouette scores and justify k=2
+Table: Final two-cluster profiles	Results	Show cluster sizes and important raw means
+Figure: PCA Visualisation of K-Means Participant Clusters	Results	Show the multivariate separation visually
+Figure: Standardised Feature Profiles of K-Means Participant Clusters	Results	Show which characteristics distinguish the profiles
